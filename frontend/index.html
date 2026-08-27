@@ -1,12 +1,10 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-
-<head>
+  <head>
     <title>DevOps Demo App</title>
-</head>
+  </head>
 
-<body>
-
+  <body>
     <h1>DevOps Demo Application</h1>
 
     <button onclick="loadUsers()">Load Users</button>
@@ -14,44 +12,29 @@
     <ul id="users"></ul>
 
     <script>
+      async function loadUsers() {
+        try {
+          const response = await fetch("/api/users");
 
-        async function loadUsers() {
+          const users = await response.json();
 
-            try {
+          const userList = document.getElementById("users");
 
-                const response =
-                    await fetch("http://localhost:5000/users");
+          userList.innerHTML = "";
 
-                const users = await response.json();
+          users.forEach((user) => {
+            const li = document.createElement("li");
 
-                const userList =
-                    document.getElementById("users");
+            li.textContent = `${user.id} - ${user.name} - ${user.email}`;
 
-                userList.innerHTML = "";
+            userList.appendChild(li);
+          });
+        } catch (error) {
+          console.error(error);
 
-                users.forEach(user => {
-
-                    const li =
-                        document.createElement("li");
-
-                    li.textContent =
-                        `${user.id} - ${user.name} - ${user.email}`;
-
-                    userList.appendChild(li);
-
-                });
-
-            } catch (error) {
-
-                console.error(error);
-
-                alert("Failed to load users");
-
-            }
+          alert("Failed to load users");
         }
-
+      }
     </script>
-
-</body>
-
+  </body>
 </html>
