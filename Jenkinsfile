@@ -46,5 +46,15 @@ pipeline {
                 '''
             }
         }
+        stage('Deploy to EKS') {
+    steps {
+        sh '''
+            helm upgrade --install devops-demo \
+            /var/lib/jenkins/workspace/devops-demo-pipeline/devops-demo \
+            --set backend.image.tag=${BUILD_NUMBER} \
+            --set frontend.image.tag=${BUILD_NUMBER}
+        '''
+    }
+}
     }
 }
