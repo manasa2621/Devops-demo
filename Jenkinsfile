@@ -17,7 +17,11 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sh 'docker-compose up -d --build'
+                sh '''
+                cd /home/ubuntu/Devops-demo
+                docker-compose pull
+                docker-compose up -d --build
+                '''
             }
         }
 
