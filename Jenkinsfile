@@ -1,7 +1,14 @@
 pipeline {
     agent any
 
+    environment {
+        AWS_REGION = 'us-east-1'
+        AWS_ACCOUNT_ID = '347228921057'
+        ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+    }
+
     stages {
+
         stage('Build') {
             steps {
                 sh 'docker build -t devops-backend:${BUILD_NUMBER} ./backend'
@@ -15,19 +22,27 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+        stage('ECR Login') {
             steps {
                 sh '''
-                docker-compose pull
-                docker-compose up -d --build
+                    aws ecr get-login-password --region ${AWS_REGION} |
+                    docker login --username AWS --password-stdin ${ECR_REGISTRY}
                 '''
             }
         }
 
-        stage('Verify') {
+        stage('Push to ECR') {
             steps {
-                sh 'docker-compose ps'
-                sh 'curl -f http://localhost:5000/health'
+                sh '''
+                    docker tag devops-backend:${BUILD_NUMBER} \
+                    ${ECR_REGISTRY}/devops-backend:${BUILD_NUMBER}
+
+                    docker tag devops-frontend:${BUILD_NUMBER} \
+                    ${ECR_REGISTRY}/devops-frontend:${BUILD_NUMBER}
+
+                    docker push ${ECR_REGISTRY}/devops-backend:${BUILD_NUMBER}
+                    docker push ${ECR_REGISTRY}/devops-frontend:${BUILD_NUMBER}
+                '''
             }
         }
     }
