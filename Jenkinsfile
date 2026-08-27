@@ -1,4 +1,3 @@
-//jenkins
 pipeline {
     agent any
 
@@ -6,6 +5,7 @@ pipeline {
         AWS_REGION = 'us-east-1'
         AWS_ACCOUNT_ID = '347228921057'
         ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        DB_PASSWORD = credentials('db-password')
     }
 
     stages {
@@ -46,15 +46,28 @@ pipeline {
                 '''
             }
         }
+
         stage('Deploy to EKS') {
-    steps {
-        sh '''
-            helm upgrade --install devops-demo \
-            /var/lib/jenkins/workspace/devops-demo-pipeline/devops-demo \
-            --set backend.image.tag=${BUILD_NUMBER} \
-            --set frontend.image.tag=${BUILD_NUMBER}
-        '''
-    }
-}
+            steps {
+                sh '''
+                    kubectl create secret generic devops-db-secret \
+                      --from-literal=DB_NAME=devopsdb \
+                      --from-literal=DB_USER=devopsuser \
+                      --from-literal=DB_PASSWORD="$DB_PASSWORD" \
+                      --dry-run=client -o yaml | kubectl apply -f -
+
+                    kubectl create secret generic postgres-secret \
+                      --from-literal=POSTGRES_DB=devopsdb \
+                      --from-literal=POSTGRES_USER=devopsuser \
+                      --from-literal=POSTGRES_PASSWORD="$DB_PASSWORD" \
+                      --dry-run=client -o yaml | kubectl apply -f -
+
+                    helm upgrade --install devops-demo \
+                      /var/lib/jenkins/workspace/devops-demo-pipeline/devops-demo \
+                      --set backend.image.tag=${BUILD_NUMBER} \
+                      --set frontend.image.tag=${BUILD_NUMBER}
+                '''
+            }
+        }
     }
 }
