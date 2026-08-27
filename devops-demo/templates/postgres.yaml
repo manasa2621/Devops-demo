@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+data:
+  init.sql: |
+    CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(150) UNIQUE NOT NULL
+    );
+
+    INSERT INTO users (name, email)
+    VALUES
+        ('Manasa', 'manasa@example.com'),
+        ('Rahul', 'rahul@example.com'),
+        ('Priya', 'priya@example.com')
+    ON CONFLICT (email) DO NOTHING;
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: {{ .Values.postgres.image }}
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: {{ .Values.database.name | quote }}
+            - name: POSTGRES_USER
+              value: {{ .Values.database.user | quote }}
+            - name: POSTGRES_PASSWORD
+              value: {{ .Values.database.password | quote }}
+          volumeMounts:
+            - name: init-script
+              mountPath: /docker-entrypoint-initdb.d
+
+      volumes:
+        - name: init-script
+          configMap:
+            name: postgres-init
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

@@ -1,0 +1,19 @@
+backend:
+  image:
+    repository: 347228921057.dkr.ecr.us-east-1.amazonaws.com/devops-backend
+    tag: "10"
+  replicas: 2
+
+frontend:
+  image:
+    repository: 347228921057.dkr.ecr.us-east-1.amazonaws.com/devops-frontend
+    tag: "9"
+  replicas: 2
+
+postgres:
+  image: postgres:18
+
+database:
+  name: devopsdb
+  user: devopsuser
+  password: devopspassword
