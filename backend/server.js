@@ -13,73 +13,63 @@ app.use(express.json());
 
 // PostgreSQL connection
 const pool = new Pool({
-    host: process.env.DB_HOST || "localhost",
-    port: process.env.DB_PORT || 5432,
-    database: process.env.DB_NAME || "devopsdb",
-    user: process.env.DB_USER || "postgres",
-    password: process.env.DB_PASSWORD || "postgres"
+  host: process.env.DB_HOST || "localhost",
+  port: process.env.DB_PORT || 5432,
+  database: process.env.DB_NAME || "devopsdb",
+  user: process.env.DB_USER || "postgres",
+  password: process.env.DB_PASSWORD || "postgres",
 });
 
 // Home
 app.get("/", (req, res) => {
-    res.send("DevOps Demo Backend is running");
+  res.send("DevOps Demo Backend is running");
 });
 
 // Health check
 app.get("/health", (req, res) => {
-    res.json({
-        status: "UP"
-    });
+  res.json({
+    status: "UP",
+  });
 });
 
 // Get all users
-app.get("/users", async (req, res) => {
+app.get("/api/users", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, name, email FROM users ORDER BY id",
+    );
 
-    try {
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Database error:", error);
 
-        const result = await pool.query(
-            "SELECT id, name, email FROM users ORDER BY id"
-        );
-
-        res.json(result.rows);
-
-    } catch (error) {
-
-        console.error("Database error:", error);
-
-        res.status(500).json({
-            error: "Database error"
-        });
-    }
+    res.status(500).json({
+      error: "Database error",
+    });
+  }
 });
 
 // Create user
-app.post("/users", async (req, res) => {
+app.post("/api/users", async (req, res) => {
+  try {
+    const { name, email } = req.body;
 
-    try {
+    const result = await pool.query(
+      "INSERT INTO users (name, email) VALUES ($1, $2) RETURNING id, name, email",
+      [name, email],
+    );
 
-        const { name, email } = req.body;
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error("Database error:", error);
 
-        const result = await pool.query(
-            "INSERT INTO users (name, email) VALUES ($1, $2) RETURNING id, name, email",
-            [name, email]
-        );
-
-        res.status(201).json(result.rows[0]);
-
-    } catch (error) {
-
-        console.error("Database error:", error);
-
-        res.status(500).json({
-            error: "Database error"
-        });
-    }
+    res.status(500).json({
+      error: "Database error",
+    });
+  }
 });
 
 // Start server
 app.listen(PORT, "0.0.0.0", () => {
-
-    console.log(`Server running on port ${PORT}`);
-
+  console.log(`Server running on port ${PORT}`);
 });
