@@ -2,34 +2,29 @@ pipeline {
     agent any
 
     stages {
-
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Build Backend') {
+        stage('Build') {
             steps {
                 sh 'docker build -t devops-backend:${BUILD_NUMBER} ./backend'
-            }
-        }
-
-        stage('Build Frontend') {
-            steps {
                 sh 'docker build -t devops-frontend:${BUILD_NUMBER} ./frontend'
             }
         }
 
-        stage('Test Backend') {
+        stage('Test') {
             steps {
                 sh 'docker run --rm devops-backend:${BUILD_NUMBER} node --version'
             }
         }
 
-        stage('Show Images') {
+        stage('Deploy') {
             steps {
-                sh 'docker images'
+                sh 'docker-compose up -d --build'
+            }
+        }
+
+        stage('Verify') {
+            steps {
+                sh 'docker-compose ps'
+                sh 'curl -f http://localhost:5000/health'
             }
         }
     }
